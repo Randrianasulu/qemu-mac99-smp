@@ -725,7 +725,7 @@ void register_high_BATs(CPUPPCState *env)
 #endif
 }
 
-/* Softare table search registers */
+/* Software table search registers */
 void register_6xx_7xx_soft_tlb(CPUPPCState *env, int nb_tlbs, int nb_ways)
 {
 #if !defined(CONFIG_USER_ONLY)

@@ -31,7 +31,7 @@
 #include "hw/qdev-properties.h"
 #include "qemu/timer.h"
 #include "hw/ppc/mac_dbdma.h"
-#include "sysemu/sysemu.h"
+#include "system/system.h"
 #include "qemu/cutils.h"
 #include "qemu/log.h"
 #include "qemu/typedefs.h"
@@ -452,7 +452,7 @@ static void screamer_initfn(Object *obj)
 
 static Property screamer_properties[] = {
     DEFINE_AUDIO_PROPERTIES(ScreamerState, card),
-    DEFINE_PROP_END_OF_LIST()
+    { },
 };
 
 static void screamer_class_init(ObjectClass *oc, void *data)
@@ -460,8 +460,8 @@ static void screamer_class_init(ObjectClass *oc, void *data)
     DeviceClass *dc = DEVICE_CLASS(oc);
 
     dc->realize = screamer_realizefn;
-    dc->reset = screamer_reset;
-    device_class_set_props(dc, screamer_properties);
+    dc->legacy_reset = screamer_reset;
+    device_class_set_props_n(dc, screamer_properties, 1);
 }
 
 static const TypeInfo screamer_type_info = {

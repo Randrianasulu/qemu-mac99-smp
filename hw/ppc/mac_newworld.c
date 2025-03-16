@@ -134,6 +134,7 @@ static void cpu_kick(void *opaque, int n, int level)
     PowerPCCPU *cpu = opaque;
     CPUState *cs = CPU(cpu);
 
+    nanosleep((const struct timespec[]){{0, 500000000L}}, NULL);
     if (level) {
         cpu->env.excp_prefix = 0;
         cpu_reset(cs);

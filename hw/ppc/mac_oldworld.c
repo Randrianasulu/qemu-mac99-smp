@@ -34,6 +34,7 @@
 #include "hw/input/adb.h"
 #include "system/system.h"
 #include "net/net.h"
+#include "hw/i2c/smbus_eeprom.h"
 #include "hw/isa/isa.h"
 #include "hw/pci/pci.h"
 #include "hw/pci/pci_host.h"
@@ -108,6 +109,9 @@ static void ppc_heathrow_init(MachineState *machine)
     void *fw_cfg;
     uint64_t tbfreq = kvm_enabled() ? kvmppc_get_tbfreq() : TBFREQ;
 
+	uint8_t *spd_data[3] = {};
+    I2CBus *i2c_bus;
+
     /* init CPUs */
     for (i = 0; i < machine->smp.cpus; i++) {
         cpu = POWERPC_CPU(cpu_create(machine->cpu_type));
@@ -126,6 +130,16 @@ static void ppc_heathrow_init(MachineState *machine)
     }
 
     memory_region_add_subregion(get_system_memory(), 0, machine->ram);
+
+    for (i = 0; i < ARRAY_SIZE(spd_data); i++) {
+        int size_left = machine->ram_size - i * 512 * MiB;
+        if (size_left > 0) {
+            uint32_t sz = size_left / MiB;
+            sz = (sz > 512 ? 512 : sz);
+            sz = 1U << (31 - clz32(sz));
+            spd_data[i] = spd_data_generate(SDR, sz * MiB);
+        }
+    }
 
     /* allocate and load firmware ROM */
     memory_region_init_rom(bios, NULL, "ppc_heathrow.bios", PROM_SIZE,
@@ -284,6 +298,13 @@ static void ppc_heathrow_init(MachineState *machine)
 
     /* MacIO CUDA/ADB */
     dev = DEVICE(object_resolve_path_component(macio, "cuda"));
+    i2c_bus = I2C_BUS(qdev_get_child_bus(dev, "i2c"));
+    for (i = 0; i < ARRAY_SIZE(spd_data); i++) {
+        if (spd_data[i]) {
+            smbus_eeprom_init_one(i2c_bus, 0x50 + i, spd_data[i]);
+        }
+    }
+
     adb_bus = qdev_get_child_bus(dev, "adb.0");
     dev = qdev_new(TYPE_ADB_KEYBOARD);
     qdev_realize_and_unref(dev, adb_bus, &error_fatal);

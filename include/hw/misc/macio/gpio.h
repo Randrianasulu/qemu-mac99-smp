@@ -30,6 +30,20 @@
 #include "hw/sysbus.h"
 #include "qom/object.h"
 
+/* Linux/KeyLargo definitions for GPIO reset and extint lines */
+#define KEYLARGO_GPIO_EXTINT_0        0x58
+#define KEYLARGO_GPIO_0               0x50   /* if needed for extint calculations */
+
+#define KL_GPIO_EXTINT_CPU1           (KEYLARGO_GPIO_0 + 0x0a)
+#define KL_GPIO_EXTINT_CPU1_ASSERT    0x04
+#define KL_GPIO_EXTINT_CPU1_RELEASE   0x38
+
+#define KL_GPIO_RESET_CPU0            (KEYLARGO_GPIO_EXTINT_0 + 0x03)
+#define KL_GPIO_RESET_CPU1            (KEYLARGO_GPIO_EXTINT_0 + 0x04)
+#define KL_GPIO_RESET_CPU2            (KEYLARGO_GPIO_EXTINT_0 + 0x0f)
+#define KL_GPIO_RESET_CPU3            (KEYLARGO_GPIO_EXTINT_0 + 0x10)
+
+
 #define TYPE_MACIO_GPIO "macio-gpio"
 OBJECT_DECLARE_SIMPLE_TYPE(MacIOGPIOState, MACIO_GPIO)
 

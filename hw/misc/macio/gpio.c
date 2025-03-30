@@ -80,7 +80,6 @@ void macio_set_gpio(MacIOGPIOState *s, uint32_t gpio, bool state)
             qemu_irq_lower(s->gpio_extirqs[gpio]);
         }
         break;
-
     case 4:
         /* Active low, CPU1 reset */
         if (!state) {
@@ -91,7 +90,26 @@ void macio_set_gpio(MacIOGPIOState *s, uint32_t gpio, bool state)
             qemu_irq_lower(s->gpio_extirqs[gpio]);
         }
         break;
-
+    case 5:
+        /* Active low, CPU2 reset */
+        if (!state) {
+            trace_macio_gpio_irq_assert(gpio);
+            qemu_irq_raise(s->gpio_extirqs[gpio]);
+        } else {
+            trace_macio_gpio_irq_deassert(gpio);
+            qemu_irq_lower(s->gpio_extirqs[gpio]);
+        }
+        break;
+    case 6:
+        /* Active low, CPU3 reset */
+        if (!state) {
+            trace_macio_gpio_irq_assert(gpio);
+            qemu_irq_raise(s->gpio_extirqs[gpio]);
+        } else {
+            trace_macio_gpio_irq_deassert(gpio);
+            qemu_irq_lower(s->gpio_extirqs[gpio]);
+        }
+        break;
     case 9:
         /* Edge, triggered by NMI below */
         if (state) {
@@ -135,7 +153,21 @@ static void macio_gpio_write(void *opaque, hwaddr addr, uint64_t value,
             if (!(value & OUT_ENABLE)) {
                 ibit = 1; /* high unless driven low */
             }
-            macio_set_gpio(s, addr, ibit);
+	}
+        macio_set_gpio(s, addr, ibit);
+
+        if (addr == (KL_GPIO_RESET_CPU1 - KEYLARGO_GPIO_EXTINT_0)) {
+            /* For CPU1 reset: (0x58+0x04) - 0x58 = 0x04 */
+            if (!(value & OUT_ENABLE)) {
+                ibit = 1; /* Ensure pulled high unless driven low */
+            }
+            macio_set_gpio(s, 4, ibit);
+        } else if (addr == (KL_GPIO_RESET_CPU2 - KEYLARGO_GPIO_EXTINT_0)) {
+            /* For CPU2 reset: (0x58+0x0f) - 0x58 = 0x0F */
+            macio_set_gpio(s, 5, ibit);
+        } else if (addr == (KL_GPIO_RESET_CPU3 - KEYLARGO_GPIO_EXTINT_0)) {
+            /* For CPU3 reset: (0x58+0x10) - 0x58 = 0x10 */
+            macio_set_gpio(s, 6, ibit);
         } else {
             s->gpio_regs[addr] = value | ibit;
         }
@@ -205,6 +237,8 @@ static void macio_gpio_reset(DeviceState *dev)
     /* GPIO 1 is up by default */
     macio_set_gpio(s, 1, true);
     macio_set_gpio(s, 4, true);
+    macio_set_gpio(s, 5, true);
+    macio_set_gpio(s, 6, true);
 }
 
 static void macio_gpio_nmi(NMIState *n, int cpu_index, Error **errp)

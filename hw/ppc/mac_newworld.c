@@ -403,6 +403,24 @@ fprintf(stderr, "cpus[%d] = %p %p\n", i, (void *)cpus[i], (void *)&cpus[i]->env)
         qdev_connect_gpio_out(uninorth_pci_dev, i,
                               qdev_get_gpio_in(pic_dev, 0x1b + i));
     }
+    
+    s = SYS_BUS_DEVICE(object_resolve_path_component(macio, "gpio"));
+    if (machine->smp.cpus > 1) {
+        /* CPU1 reset: use GPIO 4 */
+        kick = qemu_allocate_irq(cpu_kick, cpus[1], 1);
+        sysbus_connect_irq(s, 4, kick);
+    }
+    if (machine->smp.cpus > 2) {
+        /* CPU2 reset: use GPIO 5 */
+        kick = qemu_allocate_irq(cpu_kick, cpus[2], 2);
+        sysbus_connect_irq(s, 5, kick);
+    }
+    if (machine->smp.cpus > 3) {
+        /* CPU3 reset: use GPIO 6 */
+        kick = qemu_allocate_irq(cpu_kick, cpus[3], 3);
+        sysbus_connect_irq(s, 6, kick);
+    }
+
 
     /* TODO: additional PCI buses only wired up for 32-bit machines */
     if (PPC_INPUT(env) != PPC_FLAGS_INPUT_970) {
@@ -603,7 +621,7 @@ static void core99_machine_class_init(ObjectClass *oc, void *data)
     mc->init = ppc_core99_init;
     mc->block_default_type = IF_IDE;
     /* SMP is not supported currently */
-    mc->max_cpus = 2;
+    mc->max_cpus = 4;
     mc->default_boot_order = "cd";
     mc->default_display = "std";
     mc->default_nic = "sungem";
